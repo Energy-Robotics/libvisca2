@@ -1,71 +1,62 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.0.2)
+project(libvisca2)
 
-include(ReMake)
+find_package(catkin REQUIRED)
 
-remake_project(
-  libvisca2
-  VERSION 2.0
-  RELEASE beta
-  SUMMARY "Driver library for controlling VISCA-compliant cameras via RS232."
-  AUTHOR "Damien Douxchamps"
-  AUTHOR "Mikael Rosbacke"
-  AUTHOR "Joerg Desch"
-  AUTHOR "Alexander Klaeser"
-  CONTACT "ralf.kaestner@gmail.com"
-  HOME "http://damien.douxchamps.net/libvisca"
-  LICENSE "GNU Lesser General Public License (LGPL)"
-  README README.md
-  PREFIX visca-
-  INSTALL /usr
-  HEADER_DESTINATION include/libvisca
-)
-
-remake_component(
-  udev
-  CONFIGURATION_DESTINATION /etc/udev
-)
-remake_add_directories(
-  rules
-  COMPONENT udev
-)
-remake_doc(
-  html
+###################################
+## catkin specific configuration ##
+###################################
+## The catkin_package macro generates cmake config files for your package
+## Declare things to be passed to dependent projects
+## INCLUDE_DIRS: uncomment this if your package contains header files
+## LIBRARIES: libraries you create in this project that dependent projects also need
+## CATKIN_DEPENDS: catkin_packages dependent projects also need
+## DEPENDS: system dependencies of this project that dependent projects also need
+catkin_package(
+  INCLUDE_DIRS include
+  LIBRARIES libvisca2
+#  CATKIN_DEPENDS other_catkin_pkg
+#  DEPENDS system_lib
 )
 
-remake_pack_deb()
-remake_pack_deb(
-  COMPONENT dev
-  DESCRIPTION "development headers"
-  DEPENDS libvisca2
-)
-remake_pack_deb(
-  COMPONENT utils
-  DESCRIPTION "utilities"
-  DEPENDS libvisca2
-)
-remake_pack_deb(
-  COMPONENT udev
-  DESCRIPTION "udev rules"
-  DEPENDS udev
-  EXTRA debian/rules/*
-)
-remake_pack_deb(
-  ARCH all
-  COMPONENT doc
-  DESCRIPTION "documentation"
+###########
+## Build ##
+###########
+
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
 )
 
-remake_distribute_deb(
-  DISTRIBUTION precise
-  SECTION libs
-  UPLOAD ppa:kralf/asl
-  DEPENDS remake doxygen pkg-config
-  PASS CMAKE_BUILD_TYPE LIBVISCA2_GIT_REVISION
+set(LIBVISCA_FILES
+    include/${PROJECT_NAME}/libvisca.h
+    src/lib/visca/libvisca.c
+    src/lib/visca/libvisca_posix.c
+   )
+
+add_library(${PROJECT_NAME} ${LIBVISCA_FILES})
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
+
+add_executable(${PROJECT_NAME}_cli src/bin/cli.c)
+target_link_libraries(${PROJECT_NAME}_cli ${PROJECT_NAME} ${catkin_LIBRARIES})
+
+#############
+## Install ##
+#############
+
+# Mark libraries for installation
+install(TARGETS ${PROJECT_NAME}
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
 )
-remake_distribute_deb(
-  DISTRIBUTION trusty
-  SECTION libs
-  UPLOAD ppa:kralf/asl
-  DEPENDS remake doxygen pkg-config
-  PASS CMAKE_BUILD_TYPE LIBVISCA2_GIT_REVISION
+
+install(DIRECTORY include/${PROJECT_NAME}/
+        DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
+
+# Mark cpp header files for installation
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
 )

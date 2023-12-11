@@ -1,6 +1,6 @@
 /*
  * VISCA(tm) Camera Control Library
- * Copyright (C) 2002 Damien Douxchamps 
+ * Copyright (C) 2002 Damien Douxchamps
  *
  * Written by Damien Douxchamps <ddouxchamps@users.sf.net>
  *
@@ -50,7 +50,7 @@
 /* Known Vendor IDs */
 #define VISCA_VENDOR_SONY    0x0020
 
-/* Known Model IDs. The manual can be taken from 
+/* Known Model IDs. The manual can be taken from
  * http://www.sony.net/Products/ISP/docu_soft/index.html
  */
 #define VISCA_MODEL_IX47x    0x0401          /* from FCB-IX47, FCB-IX470 instruction list */
@@ -504,7 +504,7 @@ typedef struct _VISCA_camera
 {
   // VISCA data:
   int address;
-  
+
   // camera info:
   uint32_t vendor;
   uint32_t model;
@@ -788,6 +788,9 @@ VISCA_API uint32_t
 VISCA_set_mirror(VISCAInterface_t *iface, VISCACamera_t *camera, uint8_t power);
 
 VISCA_API uint32_t
+VISCA_activate_image_flip(VISCAInterface_t *iface, VISCACamera_t *camera);
+
+VISCA_API uint32_t
 VISCA_set_freeze(VISCAInterface_t *iface, VISCACamera_t *camera, uint8_t power);
 
 VISCA_API uint32_t
@@ -873,7 +876,7 @@ VISCA_set_pantilt_stop(VISCAInterface_t *iface, VISCACamera_t *camera, uint32_t 
 
 /*  pan_speed should be in the range 01 - 18.
     tilt_speed should be in the range 01 - 14
-    pan_position should be in the range -880 - 880 (0xFC90 - 0x370) 
+    pan_position should be in the range -880 - 880 (0xFC90 - 0x370)
     tilt_position should be in range -300 - 300 (0xFED4 - 0x12C)  */
 VISCA_API uint32_t
 VISCA_set_pantilt_absolute_position(VISCAInterface_t *iface, VISCACamera_t *camera, uint32_t pan_speed, uint32_t tilt_speed, int pan_position, int tilt_position);
@@ -887,7 +890,7 @@ VISCA_set_pantilt_home(VISCAInterface_t *iface, VISCACamera_t *camera);
 VISCA_API uint32_t
 VISCA_set_pantilt_reset(VISCAInterface_t *iface, VISCACamera_t *camera);
 
-/*  pan_limit should be in the range -880 - 880 (0xFC90 - 0x370) 
+/*  pan_limit should be in the range -880 - 880 (0xFC90 - 0x370)
     tilt_limit should be in range -300 - 300 (0xFED4 - 0x12C)  */
 VISCA_API uint32_t
 VISCA_set_pantilt_limit_upright(VISCAInterface_t *iface, VISCACamera_t *camera, int pan_limit, int tilt_limit);

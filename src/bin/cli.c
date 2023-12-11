@@ -339,7 +339,7 @@ get_md_obj_pos (returns the center position of the detection frame divided
                 by 48x30 pixels and a status: 1=UnDetect, 2=Detected)
 */
 
-#include "visca/libvisca.h"
+#include <libvisca2/libvisca.h>
 
 #include <stdlib.h>
 #include <stdio.h>
