@@ -1356,6 +1356,19 @@ VISCA_set_mirror(VISCAInterface_t *iface, VISCACamera_t *camera, uint8_t power)
   return _VISCA_send_packet_with_reply(iface, camera, &packet);
 }
 
+VISCA_API uint32_t
+VISCA_activate_image_flip(VISCAInterface_t *iface, VISCACamera_t *camera)
+{
+  VISCAPacket_t packet;
+
+  _VISCA_init_packet(&packet);
+  _VISCA_append_byte(&packet, VISCA_COMMAND);
+  _VISCA_append_byte(&packet, VISCA_CATEGORY_CAMERA1);
+  _VISCA_append_byte(&packet, 0x66);
+  _VISCA_append_byte(&packet, 0x02);
+
+  return _VISCA_send_packet_with_reply(iface, camera, &packet);
+}
 
 VISCA_API uint32_t
 VISCA_set_freeze(VISCAInterface_t *iface, VISCACamera_t *camera, uint8_t power)
