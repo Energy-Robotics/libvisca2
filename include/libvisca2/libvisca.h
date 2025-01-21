@@ -803,6 +803,9 @@ VISCA_API uint32_t
 VISCA_set_digital_effect_level(VISCAInterface_t *iface, VISCACamera_t *camera, uint8_t level);
 
 VISCA_API uint32_t
+VISCA_set_cam_stabilizer(VISCAInterface_t *iface, VISCACamera_t *camera, uint8_t channel);
+
+VISCA_API uint32_t
 VISCA_memory_set(VISCAInterface_t *iface, VISCACamera_t *camera, uint8_t channel);
 
 VISCA_API uint32_t
@@ -1189,3 +1192,4 @@ VISCA_usleep(uint32_t useconds);
 #endif
 
 #endif /* __LIBVISCA_H__ */
+
