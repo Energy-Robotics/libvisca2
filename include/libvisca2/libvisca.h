@@ -560,6 +560,17 @@ VISCA_unread_bytes(VISCAInterface_t *iface, unsigned char *buffer, uint32_t *buf
 VISCA_API uint32_t
 VISCA_close_serial(VISCAInterface_t *iface);
 
+/* TCP/IP CONNECTION FUNCTIONS */
+
+VISCA_API uint32_t
+VISCA_open_tcp(VISCAInterface_t *iface, const char *hostname, uint32_t port);
+
+VISCA_API uint32_t
+VISCA_close_tcp(VISCAInterface_t *iface);
+
+VISCA_API uint32_t
+VISCA_tcp_bytes_available(VISCAInterface_t *iface, uint32_t *available);
+
 /* COMMANDS */
 
 VISCA_API uint32_t
