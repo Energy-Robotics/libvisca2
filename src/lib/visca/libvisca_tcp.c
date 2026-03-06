@@ -31,13 +31,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <sys/ioctl.h>
-
-/* Debug flag - set to 1 for verbose output */
-#define DEBUG 0
-
-#if DEBUG
 #include <stdio.h>
-#endif
 
 /**
  * Opens a TCP connection to a VISCA camera/interface.
@@ -65,9 +59,7 @@ VISCA_open_tcp(VISCAInterface_t *iface, const char *hostname, uint32_t port)
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0)
     {
-#if DEBUG
         fprintf(stderr, "(%s): cannot create socket\n", __FILE__);
-#endif
         iface->port_fd = -1;
         return VISCA_FAILURE;
     }
@@ -76,9 +68,7 @@ VISCA_open_tcp(VISCAInterface_t *iface, const char *hostname, uint32_t port)
     server = gethostbyname(hostname);
     if (server == NULL)
     {
-#if DEBUG
         fprintf(stderr, "(%s): cannot resolve hostname %s\n", __FILE__, hostname);
-#endif
         close(sockfd);
         iface->port_fd = -1;
         return VISCA_FAILURE;
@@ -93,10 +83,8 @@ VISCA_open_tcp(VISCAInterface_t *iface, const char *hostname, uint32_t port)
     /* Connect to server */
     if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     {
-#if DEBUG
         fprintf(stderr, "(%s): cannot connect to %s:%d - %s\n", 
                 __FILE__, hostname, port, strerror(errno));
-#endif
         close(sockfd);
         iface->port_fd = -1;
         return VISCA_FAILURE;
@@ -106,9 +94,7 @@ VISCA_open_tcp(VISCAInterface_t *iface, const char *hostname, uint32_t port)
     optval = 1;
     if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &optval, sizeof(optval)) < 0)
     {
-#if DEBUG
         fprintf(stderr, "(%s): warning - cannot set TCP_NODELAY\n", __FILE__);
-#endif
         /* Non-fatal, continue anyway */
     }
 
@@ -133,10 +119,8 @@ VISCA_open_tcp(VISCAInterface_t *iface, const char *hostname, uint32_t port)
     iface->broadcast = 0;
     iface->bytes = 0;
 
-#if DEBUG
     fprintf(stderr, "(%s): connected to %s:%d (fd=%d)\n", 
             __FILE__, hostname, port, sockfd);
-#endif
 
     return VISCA_SUCCESS;
 }
@@ -157,9 +141,7 @@ VISCA_close_tcp(VISCAInterface_t *iface)
         close(iface->port_fd);
         iface->port_fd = -1;
 
-#if DEBUG
         fprintf(stderr, "(%s): TCP connection closed\n", __FILE__);
-#endif
         return VISCA_SUCCESS;
     }
     else
