@@ -32,6 +32,7 @@ set(LIBVISCA_FILES
     include/${PROJECT_NAME}/libvisca.h
     src/lib/visca/libvisca.c
     src/lib/visca/libvisca_posix.c
+    src/lib/visca/libvisca_tcp.c
    )
 
 add_library(${PROJECT_NAME} ${LIBVISCA_FILES})

@@ -25,6 +25,12 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <stdio.h>
+
+/* Timeout for waiting for a response packet (in seconds) */
+#define VISCA_READ_TIMEOUT_SEC  5
 
 /* implemented in libvisca.c
  */
@@ -67,10 +73,8 @@ _VISCA_send_packet(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPacket_t
     // check data:
     if ((iface->address>7)||(camera->address>7)||(iface->broadcast>1))
     {
-#if DEBUG
 	fprintf(stderr,"(%s): Invalid header parameters\n",__FILE__);
 	fprintf(stderr," %d %d %d   \n",iface->address,camera->address,iface->broadcast);
-#endif
 	return VISCA_FAILURE;
     }
 
@@ -92,28 +96,85 @@ _VISCA_send_packet(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPacket_t
 }
 
 
+/**
+ * Wait for data to be available on the file descriptor with timeout.
+ *
+ * @param fd        File descriptor to wait on
+ * @param timeout_sec  Timeout in seconds
+ * @return          1 if data available, 0 on timeout, -1 on error
+ */
+static int
+_VISCA_wait_for_data(int fd, int timeout_sec)
+{
+    fd_set read_fds;
+    struct timeval tv;
+    int ret;
+
+    FD_ZERO(&read_fds);
+    FD_SET(fd, &read_fds);
+
+    tv.tv_sec = timeout_sec;
+    tv.tv_usec = 0;
+
+    ret = select(fd + 1, &read_fds, NULL, NULL, &tv);
+
+    if (ret < 0) {
+        fprintf(stderr, "(%s): select() error: %s\n", __FILE__, strerror(errno));
+        return -1;  /* Error */
+    } else if (ret == 0) {
+        fprintf(stderr, "(%s): select() timeout after %d seconds\n", __FILE__, timeout_sec);
+        return 0;   /* Timeout */
+    }
+
+    return 1;  /* Data available */
+}
+
 uint32_t
 _VISCA_get_packet(VISCAInterface_t *iface)
 {
-    int pos=0;
+    int pos = 0;
     int bytes_read;
+    int wait_result;
 
-    // wait for message
-    ioctl(iface->port_fd, FIONREAD, &(iface->bytes));
-    while (iface->bytes==0) {
-	usleep(0);
-	ioctl(iface->port_fd, FIONREAD, &(iface->bytes));
+    /* Wait for initial data with timeout */
+    wait_result = _VISCA_wait_for_data(iface->port_fd, VISCA_READ_TIMEOUT_SEC);
+    if (wait_result <= 0) {
+        fprintf(stderr, "(%s): Timeout or error waiting for VISCA response\n", __FILE__);
+        return VISCA_FAILURE;
     }
 
-    // get octets one by one
-    bytes_read=read(iface->port_fd, iface->ibuf, 1);
-    while (iface->ibuf[pos]!=VISCA_TERMINATOR) {
-	pos++;
-	bytes_read=read(iface->port_fd, &iface->ibuf[pos], 1);
-	usleep(0);
+    /* Read first byte */
+    bytes_read = read(iface->port_fd, iface->ibuf, 1);
+    if (bytes_read != 1) {
+        fprintf(stderr, "(%s): Failed to read first byte\n", __FILE__);
+        return VISCA_FAILURE;
     }
-    iface->bytes=pos+1;
 
+    /* Read remaining bytes until terminator */
+    while (iface->ibuf[pos] != VISCA_TERMINATOR) {
+        pos++;
+
+        /* Prevent buffer overflow */
+        if (pos >= VISCA_INPUT_BUFFER_SIZE - 1) {
+            fprintf(stderr, "(%s): Input buffer overflow\n", __FILE__);
+            return VISCA_FAILURE;
+        }
+
+        /* Wait for next byte with timeout */
+        wait_result = _VISCA_wait_for_data(iface->port_fd, VISCA_READ_TIMEOUT_SEC);
+        if (wait_result <= 0) {
+            fprintf(stderr, "(%s): Timeout or error waiting for next byte (pos=%d)\n", __FILE__, pos);
+            return VISCA_FAILURE;
+        }
+
+        bytes_read = read(iface->port_fd, &iface->ibuf[pos], 1);
+        if (bytes_read != 1) {
+            fprintf(stderr, "(%s): Failed to read byte at pos %d\n", __FILE__, pos);
+            return VISCA_FAILURE;
+        }
+    }
+
+    iface->bytes = pos + 1;
     return VISCA_SUCCESS;
 }
 
@@ -131,9 +192,7 @@ VISCA_open_serial(VISCAInterface_t *iface, const char *device_name)
 
   if (fd == -1)
     {
-#if DEBUG
       fprintf(stderr,"(%s): cannot open serial device %s\n",__FILE__,device_name);
-#endif
       iface->port_fd=-1;
       return VISCA_FAILURE;
     }	
