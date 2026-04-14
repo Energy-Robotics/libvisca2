@@ -54,13 +54,27 @@ _VISCA_init_packet(VISCAPacket_t *packet)
 VISCA_API uint32_t
 _VISCA_get_reply(VISCAInterface_t *iface, VISCACamera_t *camera)
 {
+  int ack_socket = -1;
+
   // first message: -------------------
   if (_VISCA_get_packet(iface)!=VISCA_SUCCESS) 
     return VISCA_FAILURE;
   iface->type=iface->ibuf[1]&0xF0;
 
-  // skip ack messages
+  // skip ack messages, recording the socket number from our ACK
   while (iface->type==VISCA_RESPONSE_ACK)
+    {
+      ack_socket = iface->ibuf[1] & 0x0F;
+      if (_VISCA_get_packet(iface)!=VISCA_SUCCESS) 
+        return VISCA_FAILURE;
+      iface->type=iface->ibuf[1]&0xF0;
+    }
+
+  // If we got an ACK with a socket number, skip any completion messages
+  // that belong to a different socket (stale completions from prior commands).
+  while (ack_socket >= 0
+         && iface->type==VISCA_RESPONSE_COMPLETED
+         && (iface->ibuf[1] & 0x0F) != ack_socket)
     {
       if (_VISCA_get_packet(iface)!=VISCA_SUCCESS) 
         return VISCA_FAILURE;
