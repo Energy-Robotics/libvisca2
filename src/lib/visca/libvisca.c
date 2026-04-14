@@ -1796,7 +1796,7 @@ VISCA_get_zoom_value(VISCAInterface_t *iface, VISCACamera_t *camera, uint16_t *v
   if (err!=VISCA_SUCCESS)
     return err;
   else {
-    *value=(iface->ibuf[2]<<12)+(iface->ibuf[3]<<8)+(iface->ibuf[4]<<4)+iface->ibuf[5];
+    *value=((iface->ibuf[2] & 0x0F)<<12)+((iface->ibuf[3] & 0x0F)<<8)+((iface->ibuf[4] & 0x0F)<<4)+(iface->ibuf[5] & 0x0F);
     return VISCA_SUCCESS;
   }
 
@@ -1839,7 +1839,7 @@ VISCA_get_focus_value(VISCAInterface_t *iface, VISCACamera_t *camera, uint16_t *
     return err;
   else
     {
-      *value=(iface->ibuf[2]<<12)+(iface->ibuf[3]<<8)+(iface->ibuf[4]<<4)+iface->ibuf[5];
+      *value=((iface->ibuf[2] & 0x0F)<<12)+((iface->ibuf[3] & 0x0F)<<8)+((iface->ibuf[4] & 0x0F)<<4)+(iface->ibuf[5] & 0x0F);
       return VISCA_SUCCESS;
     }
 }
