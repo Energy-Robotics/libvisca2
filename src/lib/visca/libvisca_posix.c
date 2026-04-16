@@ -30,7 +30,7 @@
 #include <stdio.h>
 
 /* Timeout for waiting for a response packet (in seconds) */
-#define VISCA_READ_TIMEOUT_SEC  5
+#define VISCA_READ_TIMEOUT_SEC 20
 
 /* implemented in libvisca.c
  */
