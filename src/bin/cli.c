@@ -360,6 +360,7 @@ char *ttydev = "COM1:";
 #endif
 
 int camera_address = 1;
+uint32_t last_visca_error = 0;
 
 /*Structures needed for the VISCA library*/
 VISCAInterface_t iface;
@@ -447,6 +448,7 @@ void open_interface() {
   }
 
   iface.broadcast=0;
+  camera.address=1;
   VISCA_set_address(&iface, &camera_num);
   if(VISCA_set_address(&iface, &camera_num)!=VISCA_SUCCESS) {
 #ifdef WIN
@@ -456,8 +458,6 @@ void open_interface() {
     VISCA_close_serial(&iface);
     exit(1);
   }
-
-  camera.address=camera_address;
 
 
   if(VISCA_clear(&iface, &camera)!=VISCA_SUCCESS) {
@@ -476,6 +476,8 @@ void open_interface() {
     VISCA_close_serial(&iface);
     exit(1);
   }
+
+  camera.address = camera_address;
 
 #if DEBUG 
   fprintf(stderr,"Camera initialisation successful.\n");
@@ -2504,7 +2506,8 @@ int doCommand(char *commandline, int *ret1, int *ret2, int *ret3) {
   if (strcmp(command, "set_register") == 0) {
     if (arg1 == NULL) return 41;
     if (arg2 == NULL) return 42;
-    if (VISCA_set_register(&iface, &camera, (uint8_t)intarg1, (uint8_t)intarg2)!=VISCA_SUCCESS) {
+    last_visca_error = VISCA_set_register(&iface, &camera, (uint8_t)intarg1, (uint8_t)intarg2);
+    if (last_visca_error != VISCA_SUCCESS) {
       return 46;
     }
     return 10;
@@ -2512,7 +2515,8 @@ int doCommand(char *commandline, int *ret1, int *ret2, int *ret3) {
 
   if (strcmp(command, "get_register") == 0) {
     if (arg1 == NULL) return 41;
-    if (VISCA_get_register(&iface, &camera, (uint8_t)intarg1, &value8)!=VISCA_SUCCESS) {
+    last_visca_error = VISCA_get_register(&iface, &camera, (uint8_t)intarg1, &value8);
+    if (last_visca_error != VISCA_SUCCESS) {
       return 46;
     }
     *ret1 = value8;
@@ -2521,7 +2525,8 @@ int doCommand(char *commandline, int *ret1, int *ret2, int *ret3) {
 
   if (strcmp(command, "set_video_format") == 0) {
     if (arg1 == NULL) return 41;
-    if (VISCA_set_video_format(&iface, &camera, (uint8_t)intarg1, VISCA_NO_PERSIST, NULL, 0)!=VISCA_SUCCESS) {
+    last_visca_error = VISCA_set_video_format(&iface, &camera, (uint8_t)intarg1, VISCA_NO_PERSIST, NULL, 0);
+    if (last_visca_error != VISCA_SUCCESS) {
       return 46;
     }
     return 10;
@@ -2537,7 +2542,8 @@ int doCommand(char *commandline, int *ret1, int *ret2, int *ret3) {
       for (ai = 0; ai < 5 && args[ai] != NULL; ai++) {
         nvram_bytes[nvram_len++] = (unsigned char)strtol(args[ai], NULL, 16);
       }
-      if (VISCA_save_to_nvram(&iface, &camera, nvram_bytes, nvram_len, 2000)!=VISCA_SUCCESS) {
+      last_visca_error = VISCA_save_to_nvram(&iface, &camera, nvram_bytes, nvram_len, 2000);
+      if (last_visca_error != VISCA_SUCCESS) {
         return 46;
       }
     }
@@ -2592,7 +2598,11 @@ int main(int argc, char **argv) {
       printf("45 ERROR - argument 5 not recognized\n");
       break;
     case 46:
-      printf("46 ERROR - camera replied with an error\n");
+      if (last_visca_error != 0 && last_visca_error != VISCA_FAILURE) {
+        printf("46 ERROR - camera replied with an error (VISCA code: 0x%02X)\n", last_visca_error);
+      } else {
+        printf("46 ERROR - camera replied with an error\n");
+      }
       break;
     case 47:
       printf("47 ERROR - camera replied with an unknown return value\n");
