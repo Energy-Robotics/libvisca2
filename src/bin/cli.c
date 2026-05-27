@@ -359,14 +359,17 @@ char *ttydev = "COM1:";
  char *ttydev = "/dev/ttyS0";
 #endif
 
+int camera_address = 1;
+
 /*Structures needed for the VISCA library*/
 VISCAInterface_t iface;
 VISCACamera_t camera;
 
 /*print usage message and exit*/
 void print_usage() {
-  fprintf(stderr,"Usage: visca-cli [-d <serial port device>] command\n");
-  fprintf(stderr,"  default serial port device: %s\n",ttydev);      
+  fprintf(stderr,"Usage: visca-cli [-d <serial port device>] [-a <camera address>] command\n");
+  fprintf(stderr,"  default serial port device: %s\n",ttydev);
+  fprintf(stderr,"  default camera address: %d\n",camera_address);
   fprintf(stderr,"  for available commands see sourcecode...\n");
   exit(1);  
 }
@@ -397,6 +400,17 @@ char *process_commandline(int argc, char **argv) {
     } else {
       ttydev = argv[2];
       /*we have used up two arguments*/
+      argv += 2;
+      argc -= 2;
+    }
+  }
+
+  /*Find the camera address if specified*/
+  if (argc >= 3 && strncmp(argv[1], "-a", 2) == 0) {
+    if (argc < 4) {
+      print_usage();
+    } else {
+      camera_address = atoi(argv[2]);
       argv += 2;
       argc -= 2;
     }
@@ -443,7 +457,7 @@ void open_interface() {
     exit(1);
   }
 
-  camera.address=1;
+  camera.address=camera_address;
 
 
   if(VISCA_clear(&iface, &camera)!=VISCA_SUCCESS) {
