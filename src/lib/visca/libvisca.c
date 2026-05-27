@@ -94,10 +94,7 @@ _VISCA_send_packet_with_reply(VISCAInterface_t *iface, VISCACamera_t *camera, VI
   if (_VISCA_send_packet(iface,camera,packet)!=VISCA_SUCCESS)
     return VISCA_FAILURE;
 
-  if (_VISCA_get_reply(iface,camera)!=VISCA_SUCCESS)
-    return VISCA_FAILURE;
-
-  return VISCA_SUCCESS;    
+  return _VISCA_get_reply(iface,camera);
 }
 
 
