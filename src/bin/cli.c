@@ -2487,6 +2487,49 @@ int doCommand(char *commandline, int *ret1, int *ret2, int *ret3) {
     return 13;
   }
 
+  if (strcmp(command, "set_register") == 0) {
+    if (arg1 == NULL) return 41;
+    if (arg2 == NULL) return 42;
+    if (VISCA_set_register(&iface, &camera, (uint8_t)intarg1, (uint8_t)intarg2)!=VISCA_SUCCESS) {
+      return 46;
+    }
+    return 10;
+  }
+
+  if (strcmp(command, "get_register") == 0) {
+    if (arg1 == NULL) return 41;
+    if (VISCA_get_register(&iface, &camera, (uint8_t)intarg1, &value8)!=VISCA_SUCCESS) {
+      return 46;
+    }
+    *ret1 = value8;
+    return 11;
+  }
+
+  if (strcmp(command, "set_video_format") == 0) {
+    if (arg1 == NULL) return 41;
+    if (VISCA_set_video_format(&iface, &camera, (uint8_t)intarg1, VISCA_NO_PERSIST, NULL, 0)!=VISCA_SUCCESS) {
+      return 46;
+    }
+    return 10;
+  }
+
+  if (strcmp(command, "save_nvram") == 0) {
+    if (arg1 == NULL) return 41;
+    {
+      unsigned char nvram_bytes[30];
+      uint32_t nvram_len = 0;
+      char *args[] = {arg1, arg2, arg3, arg4, arg5};
+      int ai;
+      for (ai = 0; ai < 5 && args[ai] != NULL; ai++) {
+        nvram_bytes[nvram_len++] = (unsigned char)strtol(args[ai], NULL, 16);
+      }
+      if (VISCA_save_to_nvram(&iface, &camera, nvram_bytes, nvram_len, 2000)!=VISCA_SUCCESS) {
+        return 46;
+      }
+    }
+    return 10;
+  }
+
   /* If we reach this point, the commandline matched 
    * none of the commands we know
    */
