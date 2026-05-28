@@ -1199,8 +1199,8 @@ VISCA_get_register(VISCAInterface_t *iface, VISCACamera_t *camera, uint8_t reg_n
 #define VISCA_TWIGA_LVDS_DUAL            0x01
 
 /* Twiga USB3 Neo — register addresses */
-#define VISCA_TWIGA_REG_LVDS_MODE        0x4A
-#define VISCA_TWIGA_REG_VIDEO_FORMAT     0x48
+#define VISCA_TWIGA_REG_LVDS_MODE        0x74
+#define VISCA_TWIGA_REG_VIDEO_FORMAT     0x72
 
 /* VISCA_save_to_nvram / VISCA_set_video_format flags */
 #define VISCA_PERSIST                    1
