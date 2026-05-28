@@ -3765,24 +3765,28 @@ VISCA_save_to_nvram(VISCAInterface_t *iface, VISCACamera_t *camera,
 static uint8_t
 _VISCA_twiga_lvds_mode_for_format(uint8_t format_value)
 {
-  /*
-   * 1080p50, 1080p59.94, 1080p60 require Dual LVDS mode.
-   * All other formats (1080i*, 1080p25/29.97/30, 720p*) use Single.
-   *
-   * The exact register values for these formats come from TV10-0083.
-   * Common mapping (may need adjustment per manual table):
-   *   0x0A = 1080p50   -> Dual
-   *   0x0B = 1080p59.94 -> Dual
-   *   0x0C = 1080p60   -> Dual
-   */
   switch (format_value) {
-    case 0x0A:
-    case 0x0B:
-    case 0x0C:
+    case 0x13: /* 1080p/59.94 */
+    case 0x14: /* 1080p/50 */
+    case 0x15: /* 1080p/60 */
       return VISCA_TWIGA_LVDS_DUAL;
     default:
       return VISCA_TWIGA_LVDS_SINGLE;
   }
+}
+
+VISCA_API uint32_t
+VISCA_camera_reset(VISCAInterface_t *iface, VISCACamera_t *camera)
+{
+  VISCAPacket_t packet;
+
+  _VISCA_init_packet(&packet);
+  _VISCA_append_byte(&packet, VISCA_COMMAND);
+  _VISCA_append_byte(&packet, VISCA_CATEGORY_CAMERA1);
+  _VISCA_append_byte(&packet, 0x19);
+  _VISCA_append_byte(&packet, 0x03);
+
+  return _VISCA_send_packet(iface, camera, &packet);
 }
 
 VISCA_API uint32_t
@@ -3792,21 +3796,25 @@ VISCA_set_video_format(VISCAInterface_t *iface, VISCACamera_t *camera,
 {
   uint32_t err;
   uint8_t lvds_mode;
+  int orig_address;
 
   lvds_mode = _VISCA_twiga_lvds_mode_for_format(format_value);
-
-  err = VISCA_set_register(iface, camera, VISCA_TWIGA_REG_LVDS_MODE, lvds_mode);
-  if (err != VISCA_SUCCESS)
-    return err;
 
   err = VISCA_set_register(iface, camera, VISCA_TWIGA_REG_VIDEO_FORMAT, format_value);
   if (err != VISCA_SUCCESS)
     return err;
 
+  err = VISCA_set_register(iface, camera, VISCA_TWIGA_REG_LVDS_MODE, lvds_mode);
+  if (err != VISCA_SUCCESS)
+    return err;
+
   if (persist) {
-    err = VISCA_save_to_nvram(iface, camera, nvram_cmd, nvram_cmd_len, 2000);
-    if (err != VISCA_SUCCESS)
-      return err;
+    orig_address = camera->address;
+    camera->address = 2;
+    VISCA_save_to_nvram(iface, camera, nvram_cmd, nvram_cmd_len, 20000);
+    camera->address = orig_address;
+
+    VISCA_camera_reset(iface, camera);
   }
 
   return VISCA_SUCCESS;

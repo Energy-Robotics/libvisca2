@@ -2525,9 +2525,13 @@ int doCommand(char *commandline, int *ret1, int *ret2, int *ret3) {
 
   if (strcmp(command, "set_video_format") == 0) {
     if (arg1 == NULL) return 41;
-    last_visca_error = VISCA_set_video_format(&iface, &camera, (uint8_t)intarg1, VISCA_NO_PERSIST, NULL, 0);
-    if (last_visca_error != VISCA_SUCCESS) {
-      return 46;
+    {
+      static const unsigned char nvram_cmd[] = {0x01, 0x06, 0x13, 0x00, 0x01};
+      int do_persist = (arg2 != NULL && intarg2 == 1) ? VISCA_PERSIST : VISCA_NO_PERSIST;
+      last_visca_error = VISCA_set_video_format(&iface, &camera, (uint8_t)intarg1, do_persist, nvram_cmd, sizeof(nvram_cmd));
+      if (last_visca_error != VISCA_SUCCESS) {
+        return 46;
+      }
     }
     return 10;
   }
@@ -2542,7 +2546,33 @@ int doCommand(char *commandline, int *ret1, int *ret2, int *ret3) {
       for (ai = 0; ai < 5 && args[ai] != NULL; ai++) {
         nvram_bytes[nvram_len++] = (unsigned char)strtol(args[ai], NULL, 16);
       }
-      last_visca_error = VISCA_save_to_nvram(&iface, &camera, nvram_bytes, nvram_len, 2000);
+      last_visca_error = VISCA_save_to_nvram(&iface, &camera, nvram_bytes, nvram_len, 20000);
+      if (last_visca_error != VISCA_SUCCESS) {
+        return 46;
+      }
+    }
+    return 10;
+  }
+
+  if (strcmp(command, "camera_reset") == 0) {
+    last_visca_error = VISCA_camera_reset(&iface, &camera);
+    if (last_visca_error != VISCA_SUCCESS) {
+      return 46;
+    }
+    return 10;
+  }
+
+  if (strcmp(command, "send_raw") == 0) {
+    if (arg1 == NULL) return 41;
+    {
+      unsigned char raw_bytes[30];
+      uint32_t raw_len = 0;
+      char *args[] = {arg1, arg2, arg3, arg4, arg5};
+      int ai;
+      for (ai = 0; ai < 5 && args[ai] != NULL; ai++) {
+        raw_bytes[raw_len++] = (unsigned char)strtol(args[ai], NULL, 16);
+      }
+      last_visca_error = VISCA_save_to_nvram(&iface, &camera, raw_bytes, raw_len, 2000);
       if (last_visca_error != VISCA_SUCCESS) {
         return 46;
       }
