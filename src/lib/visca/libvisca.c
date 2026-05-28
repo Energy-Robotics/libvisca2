@@ -3756,10 +3756,7 @@ VISCA_save_to_nvram(VISCAInterface_t *iface, VISCACamera_t *camera,
 
   (void)timeout_ms;
 
-  if (_VISCA_send_packet(iface, camera, &packet) != VISCA_SUCCESS)
-    return VISCA_FAILURE;
-
-  return _VISCA_get_reply(iface, camera);
+  return _VISCA_send_packet(iface, camera, &packet);
 }
 
 static uint8_t
