@@ -1787,12 +1787,15 @@ VISCA_get_zoom_value(VISCAInterface_t *iface, VISCACamera_t *camera, uint16_t *v
 {
   VISCAPacket_t packet;
   uint32_t err;
+  int saved_timeout = iface->read_timeout_sec;
 
   _VISCA_init_packet(&packet);
   _VISCA_append_byte(&packet, VISCA_INQUIRY);
   _VISCA_append_byte(&packet, VISCA_CATEGORY_CAMERA1);
   _VISCA_append_byte(&packet, VISCA_ZOOM_VALUE);
+  iface->read_timeout_sec = VISCA_INQUIRY_TIMEOUT_SEC;
   err=_VISCA_send_packet_with_reply(iface, camera, &packet);
+  iface->read_timeout_sec = saved_timeout;
   if (err!=VISCA_SUCCESS)
     return err;
   else {
@@ -1829,12 +1832,15 @@ VISCA_get_focus_value(VISCAInterface_t *iface, VISCACamera_t *camera, uint16_t *
 {
   VISCAPacket_t packet;
   uint32_t err;
+  int saved_timeout = iface->read_timeout_sec;
 
   _VISCA_init_packet(&packet);
   _VISCA_append_byte(&packet, VISCA_INQUIRY);
   _VISCA_append_byte(&packet, VISCA_CATEGORY_CAMERA1);
   _VISCA_append_byte(&packet, VISCA_FOCUS_VALUE);
+  iface->read_timeout_sec = VISCA_INQUIRY_TIMEOUT_SEC;
   err=_VISCA_send_packet_with_reply(iface, camera, &packet);
+  iface->read_timeout_sec = saved_timeout;
   if (err!=VISCA_SUCCESS)
     return err;
   else

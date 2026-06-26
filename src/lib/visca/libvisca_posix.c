@@ -29,9 +29,6 @@
 #include <sys/time.h>
 #include <stdio.h>
 
-/* Timeout for waiting for a response packet (in seconds) */
-#define VISCA_READ_TIMEOUT_SEC 20
-
 /* implemented in libvisca.c
  */
 void _VISCA_append_byte(VISCAPacket_t *packet, unsigned char byte);
@@ -137,7 +134,7 @@ _VISCA_get_packet(VISCAInterface_t *iface)
     int wait_result;
 
     /* Wait for initial data with timeout */
-    wait_result = _VISCA_wait_for_data(iface->port_fd, VISCA_READ_TIMEOUT_SEC);
+    wait_result = _VISCA_wait_for_data(iface->port_fd, iface->read_timeout_sec);
     if (wait_result <= 0) {
         fprintf(stderr, "(%s): Timeout or error waiting for VISCA response\n", __FILE__);
         return VISCA_FAILURE;
@@ -161,7 +158,7 @@ _VISCA_get_packet(VISCAInterface_t *iface)
         }
 
         /* Wait for next byte with timeout */
-        wait_result = _VISCA_wait_for_data(iface->port_fd, VISCA_READ_TIMEOUT_SEC);
+        wait_result = _VISCA_wait_for_data(iface->port_fd, iface->read_timeout_sec);
         if (wait_result <= 0) {
             fprintf(stderr, "(%s): Timeout or error waiting for next byte (pos=%d)\n", __FILE__, pos);
             return VISCA_FAILURE;
@@ -229,6 +226,7 @@ VISCA_open_serial(VISCAInterface_t *iface, const char *device_name)
     }
   iface->port_fd = fd;
   iface->address=0;
+  iface->read_timeout_sec = VISCA_READ_TIMEOUT_SEC;
 
   return VISCA_SUCCESS;
 }

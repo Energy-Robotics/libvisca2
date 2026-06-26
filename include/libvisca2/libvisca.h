@@ -407,6 +407,7 @@ typedef struct _VISCA_interface
   unsigned char ibuf[VISCA_INPUT_BUFFER_SIZE];
   int bytes;
   int type;
+  int read_timeout_sec;
 } VISCAInterface_t;
 
 #ifdef _MSC_VER
@@ -458,6 +459,7 @@ typedef struct _VISCA_interface
 	unsigned char ibuf[VISCA_INPUT_BUFFER_SIZE];
 	int bytes;
 	int type;
+	int read_timeout_sec;
 } VISCAInterface_t;
 
 #else
@@ -489,9 +491,19 @@ typedef struct _VISCA_interface
   uint32_t bytes;
   uint32_t type;
 
+  int read_timeout_sec;
 } VISCAInterface_t;
 
 #endif
+
+/* Read timeout (seconds) for waiting on a response packet.
+ * VISCA_READ_TIMEOUT_SEC is the default for commands and absolute
+ * positioning, whose COMPLETED reply may take several seconds.
+ * VISCA_INQUIRY_TIMEOUT_SEC is the short timeout used by fast inquiries
+ * (zoom/focus value) so a dropped reply fails fast instead of stalling.
+ */
+#define VISCA_READ_TIMEOUT_SEC 20
+#define VISCA_INQUIRY_TIMEOUT_SEC 1
 
 /* INTERFACE STRUCTURE -- this is only a forward declaration to the
  * structure. We declare a pointer to hide the platform specific code.
