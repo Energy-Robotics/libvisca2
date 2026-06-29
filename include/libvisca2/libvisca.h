@@ -496,14 +496,16 @@ typedef struct _VISCA_interface
 
 #endif
 
-/* Read timeout (seconds) for waiting on a response packet.
+/* Per-byte (inter-byte idle) read timeout in seconds -- applied to each
+ * byte of a response, not to the whole reply, so the total wait can reach
+ * reply_length * timeout on a slow link.
  * VISCA_READ_TIMEOUT_SEC is the default for commands and absolute
  * positioning, whose COMPLETED reply may take several seconds.
- * VISCA_INQUIRY_TIMEOUT_SEC is the short timeout used by fast inquiries
- * (zoom/focus value) so a dropped reply fails fast instead of stalling.
+ * VISCA_FAST_READ_TIMEOUT_SEC is the short timeout opted into by the fast
+ * zoom/focus VALUE inquiries so a dropped reply fails fast instead of stalling.
  */
-#define VISCA_READ_TIMEOUT_SEC 20
-#define VISCA_INQUIRY_TIMEOUT_SEC 1
+#define VISCA_READ_TIMEOUT_SEC      20
+#define VISCA_FAST_READ_TIMEOUT_SEC 1
 
 /* INTERFACE STRUCTURE -- this is only a forward declaration to the
  * structure. We declare a pointer to hide the platform specific code.
@@ -562,6 +564,16 @@ _VISCA_send_packet(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPacket_t
 
 VISCA_API uint32_t
 _VISCA_get_packet(VISCAInterface_t *iface);
+
+/* Non-blocking: drop any buffered bytes so a stale/late reply from a
+ * timed-out inquiry can't be mis-paired with the next request. Platform specific. */
+VISCA_API uint32_t
+_VISCA_flush_input(VISCAInterface_t *iface);
+
+/* Set transport-independent interface defaults; called by every VISCA_open_*
+ * so no open path can leave read_timeout_sec (or address/broadcast/bytes) unset. */
+VISCA_API void
+_VISCA_init_interface(VISCAInterface_t *iface);
 
 VISCA_API uint32_t
 VISCA_open_serial(VISCAInterface_t *iface, const char *device_name);

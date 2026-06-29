@@ -115,10 +115,7 @@ VISCA_open_tcp(VISCAInterface_t *iface, const char *hostname, uint32_t port)
 
     /* Store socket fd and initialize interface */
     iface->port_fd = sockfd;
-    iface->address = 0;
-    iface->broadcast = 0;
-    iface->bytes = 0;
-    iface->read_timeout_sec = VISCA_READ_TIMEOUT_SEC;
+    _VISCA_init_interface(iface);
 
     fprintf(stderr, "(%s): connected to %s:%d (fd=%d)\n", 
             __FILE__, hostname, port, sockfd);

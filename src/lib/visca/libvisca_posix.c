@@ -176,6 +176,30 @@ _VISCA_get_packet(VISCAInterface_t *iface)
 }
 
 
+uint32_t
+_VISCA_flush_input(VISCAInterface_t *iface)
+{
+    int available = 0;
+    int guard = 0;
+    unsigned char scratch[64];
+
+    if (iface->port_fd < 0)
+        return VISCA_FAILURE;
+
+    while (guard++ < 64 &&
+           ioctl(iface->port_fd, FIONREAD, &available) == 0 &&
+           available > 0) {
+        size_t chunk = (available > (int)sizeof(scratch))
+                           ? sizeof(scratch)
+                           : (size_t)available;
+        if (read(iface->port_fd, scratch, chunk) <= 0)
+            break;
+    }
+
+    return VISCA_SUCCESS;
+}
+
+
 
 /***********************************/
 /*       SYSTEM  FUNCTIONS         */
@@ -225,8 +249,7 @@ VISCA_open_serial(VISCAInterface_t *iface, const char *device_name)
 
     }
   iface->port_fd = fd;
-  iface->address=0;
-  iface->read_timeout_sec = VISCA_READ_TIMEOUT_SEC;
+  _VISCA_init_interface(iface);
 
   return VISCA_SUCCESS;
 }

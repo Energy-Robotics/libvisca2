@@ -146,6 +146,14 @@ _VISCA_get_packet(VISCAInterface_t *iface)
 }
 
 
+uint32_t
+_VISCA_flush_input(VISCAInterface_t *iface)
+{
+  PurgeComm(iface->port_fd, PURGE_RXCLEAR | PURGE_RXABORT);
+  return VISCA_SUCCESS;
+}
+
+
 
 /***********************************/
 /*       SYSTEM  FUNCTIONS         */
@@ -228,7 +236,7 @@ VISCA_open_serial(VISCAInterface_t *iface, const char *device_name)
 
   // If all of these API's were successful then the port is ready for use.
   iface->port_fd = m_hCom;
-  iface->address = 0;
+  _VISCA_init_interface(iface);
 
   return VISCA_SUCCESS;
 }
