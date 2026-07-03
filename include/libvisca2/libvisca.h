@@ -563,7 +563,7 @@ VISCA_API uint32_t
 _VISCA_send_packet(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPacket_t *packet);
 
 VISCA_API uint32_t
-_VISCA_get_packet(VISCAInterface_t *iface);
+_VISCA_get_packet(VISCAInterface_t *iface, int timeout_sec);
 
 /* Non-blocking: drop any buffered bytes so a stale/late reply from a
  * timed-out inquiry can't be mis-paired with the next request. Platform specific. */

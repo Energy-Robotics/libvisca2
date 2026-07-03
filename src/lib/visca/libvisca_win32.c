@@ -30,7 +30,7 @@
  */
 void _VISCA_append_byte(VISCAPacket_t *packet, unsigned char byte);
 void _VISCA_init_packet(VISCAPacket_t *packet);
-unsigned int _VISCA_get_reply(VISCAInterface_t *iface, VISCACamera_t *camera);
+unsigned int _VISCA_get_reply(VISCAInterface_t *iface, VISCACamera_t *camera, int timeout_sec);
 unsigned int _VISCA_send_packet_with_reply(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPacket_t *packet);
 
 
@@ -39,7 +39,7 @@ unsigned int _VISCA_send_packet_with_reply(VISCAInterface_t *iface, VISCACamera_
  *
  * unsigned int _VISCA_write_packet_data(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPacket_t *packet);
  * unsigned int _VISCA_send_packet(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPacket_t *packet);
- * unsigned int _VISCA_get_packet(VISCAInterface_t *iface);
+ * unsigned int _VISCA_get_packet(VISCAInterface_t *iface, int timeout_sec);
  * unsigned int VISCA_open_serial(VISCAInterface_t *iface, const char *device_name);
  * unsigned int VISCA_close_serial(VISCAInterface_t *iface);
  * 
@@ -108,11 +108,13 @@ _VISCA_send_packet(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPacket_t
 
 
 uint32_t
-_VISCA_get_packet(VISCAInterface_t *iface)
+_VISCA_get_packet(VISCAInterface_t *iface, int timeout_sec)
 {
   int pos=0;
   BOOL  rc;
   DWORD iBytesRead;
+
+  (void)timeout_sec;  /* blocking ReadFile uses COMMTIMEOUTS, not this per-byte timeout */
 
   // wait for message
   rc=ReadFile(iface->port_fd, iface->ibuf, 1, &iBytesRead, NULL);

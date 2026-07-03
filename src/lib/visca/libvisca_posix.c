@@ -33,7 +33,7 @@
  */
 void _VISCA_append_byte(VISCAPacket_t *packet, unsigned char byte);
 void _VISCA_init_packet(VISCAPacket_t *packet);
-unsigned int _VISCA_get_reply(VISCAInterface_t *iface, VISCACamera_t *camera);
+unsigned int _VISCA_get_reply(VISCAInterface_t *iface, VISCACamera_t *camera, int timeout_sec);
 unsigned int _VISCA_send_packet_with_reply(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPacket_t *packet);
 
 
@@ -43,7 +43,7 @@ unsigned int _VISCA_send_packet_with_reply(VISCAInterface_t *iface, VISCACamera_
  *
  * unsigned int _VISCA_write_packet_data(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPacket_t *packet);
  * unsigned int _VISCA_send_packet(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPacket_t *packet);
- * unsigned int _VISCA_get_packet(VISCAInterface_t *iface);
+ * unsigned int _VISCA_get_packet(VISCAInterface_t *iface, int timeout_sec);
  * unsigned int VISCA_open_serial(VISCAInterface_t *iface, const char *device_name);
  * unsigned int VISCA_close_serial(VISCAInterface_t *iface);
  * 
@@ -127,14 +127,14 @@ _VISCA_wait_for_data(int fd, int timeout_sec)
 }
 
 uint32_t
-_VISCA_get_packet(VISCAInterface_t *iface)
+_VISCA_get_packet(VISCAInterface_t *iface, int timeout_sec)
 {
     int pos = 0;
     int bytes_read;
     int wait_result;
 
     /* Wait for initial data with timeout */
-    wait_result = _VISCA_wait_for_data(iface->port_fd, iface->read_timeout_sec);
+    wait_result = _VISCA_wait_for_data(iface->port_fd, timeout_sec);
     if (wait_result <= 0) {
         fprintf(stderr, "(%s): Timeout or error waiting for VISCA response\n", __FILE__);
         return VISCA_FAILURE;
@@ -158,7 +158,7 @@ _VISCA_get_packet(VISCAInterface_t *iface)
         }
 
         /* Wait for next byte with timeout */
-        wait_result = _VISCA_wait_for_data(iface->port_fd, iface->read_timeout_sec);
+        wait_result = _VISCA_wait_for_data(iface->port_fd, timeout_sec);
         if (wait_result <= 0) {
             fprintf(stderr, "(%s): Timeout or error waiting for next byte (pos=%d)\n", __FILE__, pos);
             return VISCA_FAILURE;

@@ -75,10 +75,12 @@ _VISCA_send_packet(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPacket_t
 
 
 uint32_t
-_VISCA_get_packet(VISCAInterface_t *iface)
+_VISCA_get_packet(VISCAInterface_t *iface, int timeout_sec)
 {
     int pos=0;
     int curr;
+
+    (void)timeout_sec;  /* v24Getc has its own receive timeout */
 
     // get octets one by one
     curr = v24Getc(iface->port_fd);
