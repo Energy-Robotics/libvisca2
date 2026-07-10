@@ -3806,12 +3806,18 @@ VISCA_set_video_format(VISCAInterface_t *iface, VISCACamera_t *camera,
     return err;
 
   if (persist) {
+    uint32_t persist_err;
+
     orig_address = camera->address;
     camera->address = 2;
-    VISCA_save_to_nvram(iface, camera, nvram_cmd, nvram_cmd_len, 20000);
+    persist_err = VISCA_save_to_nvram(iface, camera, nvram_cmd, nvram_cmd_len, 20000);
     camera->address = orig_address;
+    if (persist_err != VISCA_SUCCESS)
+      return persist_err;
 
-    VISCA_camera_reset(iface, camera);
+    persist_err = VISCA_camera_reset(iface, camera);
+    if (persist_err != VISCA_SUCCESS)
+      return persist_err;
   }
 
   return VISCA_SUCCESS;
