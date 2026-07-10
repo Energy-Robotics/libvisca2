@@ -1194,7 +1194,7 @@ VISCA_set_register(VISCAInterface_t *iface, VISCACamera_t *camera, uint8_t reg_n
 VISCA_API uint32_t
 VISCA_get_register(VISCAInterface_t *iface, VISCACamera_t *camera, uint8_t reg_num, uint8_t* reg_val);
 
-/* Twiga USB3 Neo — LVDS mode values (register 0x4A) */
+/* Twiga USB3 Neo — LVDS mode values (LVDS mode register) */
 #define VISCA_TWIGA_LVDS_SINGLE          0x00
 #define VISCA_TWIGA_LVDS_DUAL            0x01
 
