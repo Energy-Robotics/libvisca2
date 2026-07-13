@@ -1239,7 +1239,7 @@ VISCA_save_to_nvram(VISCAInterface_t *iface, VISCACamera_t *camera,
 VISCA_API uint32_t
 VISCA_camera_reset(VISCAInterface_t *iface, VISCACamera_t *camera);
 
-/* If persist is VISCA_PERSIST, save/reset is sent to VISCA_TWIGA_PERSIST_ADDRESS. */
+/* If persist is VISCA_PERSIST, the NVRAM save is sent to VISCA_TWIGA_PERSIST_ADDRESS and the reset is sent to the target camera. */
 VISCA_API uint32_t
 VISCA_set_video_format(VISCAInterface_t *iface, VISCACamera_t *camera,
                        uint8_t format_value, int persist,
