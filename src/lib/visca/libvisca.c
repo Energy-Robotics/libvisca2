@@ -52,17 +52,17 @@ _VISCA_init_packet(VISCAPacket_t *packet)
 
 
 VISCA_API uint32_t
-_VISCA_get_reply(VISCAInterface_t *iface, VISCACamera_t *camera)
+_VISCA_get_reply(VISCAInterface_t *iface, VISCACamera_t *camera, int timeout_sec)
 {
   // first message: -------------------
-  if (_VISCA_get_packet(iface)!=VISCA_SUCCESS) 
+  if (_VISCA_get_packet(iface, timeout_sec)!=VISCA_SUCCESS) 
     return VISCA_FAILURE;
   iface->type=iface->ibuf[1]&0xF0;
 
   // skip ack messages
   while (iface->type==VISCA_RESPONSE_ACK)
     {
-      if (_VISCA_get_packet(iface)!=VISCA_SUCCESS) 
+      if (_VISCA_get_packet(iface, timeout_sec)!=VISCA_SUCCESS) 
         return VISCA_FAILURE;
       iface->type=iface->ibuf[1]&0xF0;
     }
@@ -86,15 +86,32 @@ _VISCA_get_reply(VISCAInterface_t *iface, VISCACamera_t *camera)
 }
 
 VISCA_API uint32_t
-_VISCA_send_packet_with_reply(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPacket_t *packet)
+_VISCA_send_packet_with_reply_timeout(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPacket_t *packet, int timeout_sec)
 {
   if (_VISCA_send_packet(iface,camera,packet)!=VISCA_SUCCESS)
     return VISCA_FAILURE;
 
-  if (_VISCA_get_reply(iface,camera)!=VISCA_SUCCESS)
+  if (_VISCA_get_reply(iface,camera,timeout_sec)!=VISCA_SUCCESS)
     return VISCA_FAILURE;
 
   return VISCA_SUCCESS;    
+}
+
+
+VISCA_API uint32_t
+_VISCA_send_packet_with_reply(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPacket_t *packet)
+{
+  return _VISCA_send_packet_with_reply_timeout(iface, camera, packet, iface->read_timeout_sec);
+}
+
+
+VISCA_API void
+_VISCA_init_interface(VISCAInterface_t *iface)
+{
+  iface->address = 0;
+  iface->broadcast = 0;
+  iface->bytes = 0;
+  iface->read_timeout_sec = VISCA_READ_TIMEOUT_SEC;
 }
 
 
@@ -130,7 +147,7 @@ VISCA_set_address(VISCAInterface_t *iface, int *camera_num)
   else
     iface->broadcast=backup;
   
-  if (_VISCA_get_reply(iface, &camera)!=VISCA_SUCCESS)
+  if (_VISCA_get_reply(iface, &camera, iface->read_timeout_sec)!=VISCA_SUCCESS)
     return VISCA_FAILURE;
   else
     {
@@ -167,7 +184,7 @@ VISCA_clear(VISCAInterface_t *iface, VISCACamera_t *camera)
   if (_VISCA_send_packet(iface, camera, &packet)!=VISCA_SUCCESS)
     return VISCA_FAILURE;
   else
-    if (_VISCA_get_reply(iface, camera)!=VISCA_SUCCESS)
+    if (_VISCA_get_reply(iface, camera, iface->read_timeout_sec)!=VISCA_SUCCESS)
       return VISCA_FAILURE;
     else
       return VISCA_SUCCESS;
@@ -187,7 +204,7 @@ VISCA_get_camera_info(VISCAInterface_t *iface, VISCACamera_t *camera)
   if (_VISCA_write_packet_data(iface, camera, &packet)!=VISCA_SUCCESS)
     return VISCA_FAILURE;
   else
-    if (_VISCA_get_reply(iface, camera)!=VISCA_SUCCESS)
+    if (_VISCA_get_reply(iface, camera, iface->read_timeout_sec)!=VISCA_SUCCESS)
       return VISCA_FAILURE;
 
   if (iface->bytes!= 10) /* we expect 10 bytes as answer */
@@ -1792,7 +1809,8 @@ VISCA_get_zoom_value(VISCAInterface_t *iface, VISCACamera_t *camera, uint16_t *v
   _VISCA_append_byte(&packet, VISCA_INQUIRY);
   _VISCA_append_byte(&packet, VISCA_CATEGORY_CAMERA1);
   _VISCA_append_byte(&packet, VISCA_ZOOM_VALUE);
-  err=_VISCA_send_packet_with_reply(iface, camera, &packet);
+  _VISCA_flush_input(iface);
+  err=_VISCA_send_packet_with_reply_timeout(iface, camera, &packet, VISCA_FAST_READ_TIMEOUT_SEC);
   if (err!=VISCA_SUCCESS)
     return err;
   else {
@@ -1834,7 +1852,8 @@ VISCA_get_focus_value(VISCAInterface_t *iface, VISCACamera_t *camera, uint16_t *
   _VISCA_append_byte(&packet, VISCA_INQUIRY);
   _VISCA_append_byte(&packet, VISCA_CATEGORY_CAMERA1);
   _VISCA_append_byte(&packet, VISCA_FOCUS_VALUE);
-  err=_VISCA_send_packet_with_reply(iface, camera, &packet);
+  _VISCA_flush_input(iface);
+  err=_VISCA_send_packet_with_reply_timeout(iface, camera, &packet, VISCA_FAST_READ_TIMEOUT_SEC);
   if (err!=VISCA_SUCCESS)
     return err;
   else

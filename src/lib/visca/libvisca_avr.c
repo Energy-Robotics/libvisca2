@@ -75,10 +75,12 @@ _VISCA_send_packet(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPacket_t
 
 
 uint32_t
-_VISCA_get_packet(VISCAInterface_t *iface)
+_VISCA_get_packet(VISCAInterface_t *iface, int timeout_sec)
 {
     int pos=0;
     int curr;
+
+    (void)timeout_sec;  /* v24Getc has its own receive timeout */
 
     // get octets one by one
     curr = v24Getc(iface->port_fd);
@@ -115,6 +117,14 @@ _VISCA_get_packet(VISCAInterface_t *iface)
 }
 
 
+uint32_t
+_VISCA_flush_input(VISCAInterface_t *iface)
+{
+    while ( v24Getc(iface->port_fd) >= 0 ) { }
+    return VISCA_SUCCESS;
+}
+
+
 
 /***********************************/
 /*       SYSTEM  FUNCTIONS         */
@@ -136,7 +146,7 @@ VISCA_open_serial(VISCAInterface_t *iface, const char *device_name)
     }
 
     iface->port_fd = UART_VISCA;
-    iface->address=0;
+    _VISCA_init_interface(iface);
 
     return VISCA_SUCCESS;
 }
