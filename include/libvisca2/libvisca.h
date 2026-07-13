@@ -1208,8 +1208,7 @@ VISCA_get_register(VISCAInterface_t *iface, VISCACamera_t *camera, uint8_t reg_n
 
 VISCA_API uint32_t
 VISCA_save_to_nvram(VISCAInterface_t *iface, VISCACamera_t *camera,
-                    const unsigned char *nvram_cmd, uint32_t nvram_cmd_len,
-                    uint32_t timeout_ms);
+                    const unsigned char *nvram_cmd, uint32_t nvram_cmd_len);
 
 VISCA_API uint32_t
 VISCA_camera_reset(VISCAInterface_t *iface, VISCACamera_t *camera);

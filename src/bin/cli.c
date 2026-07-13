@@ -2546,7 +2546,7 @@ int doCommand(char *commandline, int *ret1, int *ret2, int *ret3) {
       for (ai = 0; ai < 5 && args[ai] != NULL; ai++) {
         nvram_bytes[nvram_len++] = (unsigned char)strtol(args[ai], NULL, 16);
       }
-      last_visca_error = VISCA_save_to_nvram(&iface, &camera, nvram_bytes, nvram_len, 20000);
+      last_visca_error = VISCA_save_to_nvram(&iface, &camera, nvram_bytes, nvram_len);
       if (last_visca_error != VISCA_SUCCESS) {
         return 46;
       }
@@ -2572,7 +2572,7 @@ int doCommand(char *commandline, int *ret1, int *ret2, int *ret3) {
       for (ai = 0; ai < 5 && args[ai] != NULL; ai++) {
         raw_bytes[raw_len++] = (unsigned char)strtol(args[ai], NULL, 16);
       }
-      last_visca_error = VISCA_save_to_nvram(&iface, &camera, raw_bytes, raw_len, 2000);
+      last_visca_error = VISCA_save_to_nvram(&iface, &camera, raw_bytes, raw_len);
       if (last_visca_error != VISCA_SUCCESS) {
         return 46;
       }

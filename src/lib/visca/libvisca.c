@@ -3741,8 +3741,7 @@ VISCA_get_md_obj_pos(VISCAInterface_t *iface, VISCACamera_t *camera, uint8_t *xp
 
 VISCA_API uint32_t
 VISCA_save_to_nvram(VISCAInterface_t *iface, VISCACamera_t *camera,
-                    const unsigned char *nvram_cmd, uint32_t nvram_cmd_len,
-                    uint32_t timeout_ms)
+                    const unsigned char *nvram_cmd, uint32_t nvram_cmd_len)
 {
   VISCAPacket_t packet;
   uint32_t i;
@@ -3753,8 +3752,6 @@ VISCA_save_to_nvram(VISCAInterface_t *iface, VISCACamera_t *camera,
   _VISCA_init_packet(&packet);
   for (i = 0; i < nvram_cmd_len; i++)
     _VISCA_append_byte(&packet, nvram_cmd[i]);
-
-  (void)timeout_ms;
 
   return _VISCA_send_packet(iface, camera, &packet);
 }
@@ -3810,7 +3807,7 @@ VISCA_set_video_format(VISCAInterface_t *iface, VISCACamera_t *camera,
 
     orig_address = camera->address;
     camera->address = 2;
-    persist_err = VISCA_save_to_nvram(iface, camera, nvram_cmd, nvram_cmd_len, 20000);
+    persist_err = VISCA_save_to_nvram(iface, camera, nvram_cmd, nvram_cmd_len);
     camera->address = orig_address;
     if (persist_err != VISCA_SUCCESS)
       return persist_err;
