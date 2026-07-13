@@ -1201,6 +1201,7 @@ VISCA_get_register(VISCAInterface_t *iface, VISCACamera_t *camera, uint8_t reg_n
 /* Twiga USB3 Neo — register addresses */
 #define VISCA_TWIGA_REG_LVDS_MODE        0x74
 #define VISCA_TWIGA_REG_VIDEO_FORMAT     0x72
+#define VISCA_TWIGA_PERSIST_ADDRESS      0x02
 
 /* VISCA_save_to_nvram / VISCA_set_video_format flags */
 #define VISCA_PERSIST                    1
@@ -1213,6 +1214,7 @@ VISCA_save_to_nvram(VISCAInterface_t *iface, VISCACamera_t *camera,
 VISCA_API uint32_t
 VISCA_camera_reset(VISCAInterface_t *iface, VISCACamera_t *camera);
 
+/* If persist is VISCA_PERSIST, save/reset is sent to VISCA_TWIGA_PERSIST_ADDRESS. */
 VISCA_API uint32_t
 VISCA_set_video_format(VISCAInterface_t *iface, VISCACamera_t *camera,
                        uint8_t format_value, int persist,
@@ -1227,4 +1229,3 @@ VISCA_usleep(uint32_t useconds);
 #endif
 
 #endif /* __LIBVISCA_H__ */
-

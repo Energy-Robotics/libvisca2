@@ -3790,7 +3790,6 @@ VISCA_set_video_format(VISCAInterface_t *iface, VISCACamera_t *camera,
 {
   uint32_t err;
   uint8_t lvds_mode;
-  int orig_address;
 
   lvds_mode = _VISCA_twiga_lvds_mode_for_format(format_value);
 
@@ -3803,12 +3802,12 @@ VISCA_set_video_format(VISCAInterface_t *iface, VISCACamera_t *camera,
     return err;
 
   if (persist) {
+    VISCACamera_t persist_camera;
     uint32_t persist_err;
 
-    orig_address = camera->address;
-    camera->address = 2;
-    persist_err = VISCA_save_to_nvram(iface, camera, nvram_cmd, nvram_cmd_len);
-    camera->address = orig_address;
+    persist_camera = *camera;
+    persist_camera.address = VISCA_TWIGA_PERSIST_ADDRESS;
+    persist_err = VISCA_save_to_nvram(iface, &persist_camera, nvram_cmd, nvram_cmd_len);
     if (persist_err != VISCA_SUCCESS)
       return persist_err;
 
