@@ -3792,7 +3792,7 @@ _VISCA_twiga_lvds_mode_for_format(uint8_t format_value)
 }
 
 VISCA_API uint32_t
-VISCA_camera_reset(VISCAInterface_t *iface, VISCACamera_t *camera)
+VISCA_twiga_camera_reset(VISCAInterface_t *iface, VISCACamera_t *camera)
 {
   VISCAPacket_t packet;
 
@@ -3833,7 +3833,7 @@ VISCA_set_video_format(VISCAInterface_t *iface, VISCACamera_t *camera,
     if (persist_err != VISCA_SUCCESS)
       return persist_err;
 
-    persist_err = VISCA_camera_reset(iface, camera);
+    persist_err = VISCA_twiga_camera_reset(iface, camera);
     if (persist_err != VISCA_SUCCESS)
       return persist_err;
   }
