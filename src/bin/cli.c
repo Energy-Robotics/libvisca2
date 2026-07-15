@@ -471,7 +471,6 @@ void open_interface() {
 
   iface.broadcast=0;
   camera.address=1;
-  VISCA_set_address(&iface, &camera_num);
   if(VISCA_set_address(&iface, &camera_num)!=VISCA_SUCCESS) {
 #ifdef WIN
     _RPTF0(_CRT_WARN,"unable to set address\n");
