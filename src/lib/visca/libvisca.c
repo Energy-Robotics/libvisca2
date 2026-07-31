@@ -3806,7 +3806,7 @@ VISCA_twiga_camera_reset(VISCAInterface_t *iface, VISCACamera_t *camera)
 }
 
 VISCA_API uint32_t
-VISCA_set_video_format(VISCAInterface_t *iface, VISCACamera_t *camera,
+VISCA_twiga_set_video_format(VISCAInterface_t *iface, VISCACamera_t *camera,
                        uint8_t format_value, int persist,
                        const unsigned char *nvram_cmd, uint32_t nvram_cmd_len)
 {

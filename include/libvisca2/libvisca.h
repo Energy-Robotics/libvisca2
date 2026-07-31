@@ -1228,7 +1228,7 @@ VISCA_get_register(VISCAInterface_t *iface, VISCACamera_t *camera, uint8_t reg_n
 /* Twiga persistence commands are sent to camera address 0x02. */
 #define VISCA_TWIGA_PERSIST_ADDRESS      0x02
 
-/* VISCA_save_to_nvram / VISCA_set_video_format flags */
+/* VISCA_save_to_nvram / VISCA_twiga_set_video_format flags */
 #define VISCA_PERSIST                    1
 #define VISCA_NO_PERSIST                 0
 
@@ -1241,7 +1241,7 @@ VISCA_twiga_camera_reset(VISCAInterface_t *iface, VISCACamera_t *camera);
 
 /* If persist is VISCA_PERSIST, the NVRAM save is sent to VISCA_TWIGA_PERSIST_ADDRESS and the reset is sent to the target camera. */
 VISCA_API uint32_t
-VISCA_set_video_format(VISCAInterface_t *iface, VISCACamera_t *camera,
+VISCA_twiga_set_video_format(VISCAInterface_t *iface, VISCACamera_t *camera,
                        uint8_t format_value, int persist,
                        const unsigned char *nvram_cmd, uint32_t nvram_cmd_len);
 

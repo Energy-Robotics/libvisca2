@@ -2544,12 +2544,12 @@ int doCommand(char *commandline, int *ret1, int *ret2, int *ret3) {
     return CLI_OK_ONE_RETURN;
   }
 
-  if (strcmp(command, "set_video_format") == 0) {
+  if (strcmp(command, "twiga_set_video_format") == 0) {
     if (arg1 == NULL) return CLI_ERR_ARG1_INVALID;
     {
       static const unsigned char nvram_cmd[] = {0x01, 0x06, 0x13, 0x00, 0x01};
       int do_persist = (arg2 != NULL && intarg2 == 1) ? VISCA_PERSIST : VISCA_NO_PERSIST;
-      last_visca_error = VISCA_set_video_format(&iface, &camera, (uint8_t)intarg1, do_persist, nvram_cmd, sizeof(nvram_cmd));
+      last_visca_error = VISCA_twiga_set_video_format(&iface, &camera, (uint8_t)intarg1, do_persist, nvram_cmd, sizeof(nvram_cmd));
       if (last_visca_error != VISCA_SUCCESS) {
         return CLI_ERR_VISCA_ERROR;
       }
