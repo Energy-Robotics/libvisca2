@@ -91,11 +91,14 @@ _VISCA_get_reply(VISCAInterface_t *iface, VISCACamera_t *camera, int timeout_sec
 VISCA_API uint32_t
 _VISCA_send_packet_with_reply_timeout(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPacket_t *packet, int timeout_sec)
 {
+  uint32_t reply;
+
   if (_VISCA_send_packet(iface,camera,packet)!=VISCA_SUCCESS)
     return VISCA_FAILURE;
 
-  if (_VISCA_get_reply(iface,camera,timeout_sec)!=VISCA_SUCCESS)
-    return VISCA_FAILURE;
+  reply = _VISCA_get_reply(iface,camera,timeout_sec);
+  if (reply != VISCA_SUCCESS)
+    return reply;
 
   return VISCA_SUCCESS;
 }
