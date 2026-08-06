@@ -20,6 +20,7 @@
  */
 
 #include <libvisca2/libvisca.h>
+#include <stddef.h>
 
 #ifdef VISCA_WIN
 # ifdef _DEBUG
@@ -79,7 +80,9 @@ _VISCA_get_reply(VISCAInterface_t *iface, VISCACamera_t *camera, int timeout_sec
       return VISCA_SUCCESS;
       break;
     case VISCA_RESPONSE_ERROR:
-      return VISCA_SUCCESS;
+      if (iface->bytes >= 3)
+        return iface->ibuf[2];
+      return VISCA_FAILURE;
       break;
     }
   return VISCA_FAILURE;
@@ -88,13 +91,16 @@ _VISCA_get_reply(VISCAInterface_t *iface, VISCACamera_t *camera, int timeout_sec
 VISCA_API uint32_t
 _VISCA_send_packet_with_reply_timeout(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPacket_t *packet, int timeout_sec)
 {
+  uint32_t reply;
+
   if (_VISCA_send_packet(iface,camera,packet)!=VISCA_SUCCESS)
     return VISCA_FAILURE;
 
-  if (_VISCA_get_reply(iface,camera,timeout_sec)!=VISCA_SUCCESS)
-    return VISCA_FAILURE;
+  reply = _VISCA_get_reply(iface,camera,timeout_sec);
+  if (reply != VISCA_SUCCESS)
+    return reply;
 
-  return VISCA_SUCCESS;    
+  return VISCA_SUCCESS;
 }
 
 
@@ -3751,4 +3757,89 @@ VISCA_get_md_obj_pos(VISCAInterface_t *iface, VISCACamera_t *camera, uint8_t *xp
       *status=(iface->ibuf[4] & 0x0f);
       return VISCA_SUCCESS;
     }
+}
+
+
+/*****************************************/
+/* TWIGA USB3 NEO — NVRAM & VIDEO FORMAT */
+/*****************************************/
+
+VISCA_API uint32_t
+VISCA_save_to_nvram(VISCAInterface_t *iface, VISCACamera_t *camera,
+                    const unsigned char *nvram_cmd, uint32_t nvram_cmd_len)
+{
+  VISCAPacket_t packet;
+  uint32_t i;
+
+  if (nvram_cmd == NULL || nvram_cmd_len == 0 || nvram_cmd_len > 30)
+    return VISCA_FAILURE;
+
+  _VISCA_init_packet(&packet);
+  for (i = 0; i < nvram_cmd_len; i++)
+    _VISCA_append_byte(&packet, nvram_cmd[i]);
+
+  return _VISCA_send_packet(iface, camera, &packet);
+}
+
+static uint8_t
+_VISCA_twiga_lvds_mode_for_format(uint8_t format_value)
+{
+  switch (format_value) {
+    case 0x13: /* 1080p/59.94 */
+    case 0x14: /* 1080p/50 */
+    case 0x15: /* 1080p/60 */
+      return VISCA_TWIGA_LVDS_DUAL;
+    default:
+      return VISCA_TWIGA_LVDS_SINGLE;
+  }
+}
+
+VISCA_API uint32_t
+VISCA_twiga_camera_reset(VISCAInterface_t *iface, VISCACamera_t *camera)
+{
+  VISCAPacket_t packet;
+
+  _VISCA_init_packet(&packet);
+  _VISCA_append_byte(&packet, VISCA_COMMAND);
+  _VISCA_append_byte(&packet, VISCA_CATEGORY_CAMERA1);
+  _VISCA_append_byte(&packet, 0x19);
+  _VISCA_append_byte(&packet, 0x03);
+
+  return _VISCA_send_packet(iface, camera, &packet);
+}
+
+VISCA_API uint32_t
+VISCA_twiga_set_video_format(VISCAInterface_t *iface, VISCACamera_t *camera,
+                       uint8_t format_value, int persist,
+                       const unsigned char *nvram_cmd, uint32_t nvram_cmd_len)
+{
+  uint32_t err;
+  uint8_t lvds_mode;
+
+  lvds_mode = _VISCA_twiga_lvds_mode_for_format(format_value);
+
+  err = VISCA_set_register(iface, camera, VISCA_TWIGA_REG_VIDEO_FORMAT, format_value);
+  if (err != VISCA_SUCCESS)
+    return err;
+
+  err = VISCA_set_register(iface, camera, VISCA_TWIGA_REG_LVDS_MODE, lvds_mode);
+  if (err != VISCA_SUCCESS)
+    return err;
+
+  if (persist) {
+    VISCACamera_t persist_camera;
+    uint32_t persist_err;
+
+    persist_camera = *camera;
+    persist_camera.address = VISCA_TWIGA_PERSIST_ADDRESS;
+    persist_err = VISCA_save_to_nvram(iface, &persist_camera, nvram_cmd, nvram_cmd_len);
+    if (persist_err != VISCA_SUCCESS)
+      return persist_err;
+
+    persist_err = VISCA_twiga_camera_reset(iface, camera);
+    if (persist_err != VISCA_SUCCESS)
+      return persist_err;
+  }
+
+  return VISCA_SUCCESS;
 }

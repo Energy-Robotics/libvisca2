@@ -359,14 +359,40 @@ char *ttydev = "COM1:";
  char *ttydev = "/dev/ttyS0";
 #endif
 
+int camera_address = 1;
+uint32_t last_visca_error = 0;
+
+/* doCommand()/main() result codes.
+ *
+ * NOTE: These constants are used by the newer commands (set_register,
+ * get_register, set_video_format, save_nvram, twiga_camera_reset,
+ * send_raw) and by the result decoder in main(). Most of the
+ * pre-existing commands in doCommand() still return the equivalent raw
+ * numeric literals below.
+ * TODO: migrate the remaining commands to use these named constants too.
+ */
+#define CLI_OK_NO_RETURN        10 /* command succeeded, no return value */
+#define CLI_OK_ONE_RETURN       11 /* command succeeded, one return value */
+#define CLI_OK_TWO_RETURN       12 /* command succeeded, two return values */
+#define CLI_OK_THREE_RETURN     13 /* command succeeded, three return values */
+#define CLI_ERR_CMD_UNKNOWN     40 /* command not recognized */
+#define CLI_ERR_ARG1_INVALID    41 /* argument 1 not recognized */
+#define CLI_ERR_ARG2_INVALID    42 /* argument 2 not recognized */
+#define CLI_ERR_ARG3_INVALID    43 /* argument 3 not recognized */
+#define CLI_ERR_ARG4_INVALID    44 /* argument 4 not recognized */
+#define CLI_ERR_ARG5_INVALID    45 /* argument 5 not recognized */
+#define CLI_ERR_VISCA_ERROR     46 /* camera replied with an error */
+#define CLI_ERR_UNKNOWN_REPLY   47 /* camera replied with an unknown return value */
+
 /*Structures needed for the VISCA library*/
 VISCAInterface_t iface;
 VISCACamera_t camera;
 
 /*print usage message and exit*/
 void print_usage() {
-  fprintf(stderr,"Usage: visca-cli [-d <serial port device>] command\n");
-  fprintf(stderr,"  default serial port device: %s\n",ttydev);      
+  fprintf(stderr,"Usage: visca-cli [-d <serial port device>] [-a <camera address>] command\n");
+  fprintf(stderr,"  default serial port device: %s\n",ttydev);
+  fprintf(stderr,"  default camera address: %d\n",camera_address);
   fprintf(stderr,"  for available commands see sourcecode...\n");
   exit(1);  
 }
@@ -397,6 +423,17 @@ char *process_commandline(int argc, char **argv) {
     } else {
       ttydev = argv[2];
       /*we have used up two arguments*/
+      argv += 2;
+      argc -= 2;
+    }
+  }
+
+  /*Find the camera address if specified*/
+  if (argc >= 3 && strncmp(argv[1], "-a", 2) == 0) {
+    if (argc < 4) {
+      print_usage();
+    } else {
+      camera_address = atoi(argv[2]);
       argv += 2;
       argc -= 2;
     }
@@ -433,7 +470,7 @@ void open_interface() {
   }
 
   iface.broadcast=0;
-  VISCA_set_address(&iface, &camera_num);
+  camera.address=1;
   if(VISCA_set_address(&iface, &camera_num)!=VISCA_SUCCESS) {
 #ifdef WIN
     _RPTF0(_CRT_WARN,"unable to set address\n");
@@ -442,8 +479,6 @@ void open_interface() {
     VISCA_close_serial(&iface);
     exit(1);
   }
-
-  camera.address=1;
 
 
   if(VISCA_clear(&iface, &camera)!=VISCA_SUCCESS) {
@@ -462,6 +497,8 @@ void open_interface() {
     VISCA_close_serial(&iface);
     exit(1);
   }
+
+  camera.address = camera_address;
 
 #if DEBUG 
   fprintf(stderr,"Camera initialisation successful.\n");
@@ -2487,6 +2524,83 @@ int doCommand(char *commandline, int *ret1, int *ret2, int *ret3) {
     return 13;
   }
 
+  if (strcmp(command, "set_register") == 0) {
+    if (arg1 == NULL) return CLI_ERR_ARG1_INVALID;
+    if (arg2 == NULL) return CLI_ERR_ARG2_INVALID;
+    last_visca_error = VISCA_set_register(&iface, &camera, (uint8_t)intarg1, (uint8_t)intarg2);
+    if (last_visca_error != VISCA_SUCCESS) {
+      return CLI_ERR_VISCA_ERROR;
+    }
+    return CLI_OK_NO_RETURN;
+  }
+
+  if (strcmp(command, "get_register") == 0) {
+    if (arg1 == NULL) return CLI_ERR_ARG1_INVALID;
+    last_visca_error = VISCA_get_register(&iface, &camera, (uint8_t)intarg1, &value8);
+    if (last_visca_error != VISCA_SUCCESS) {
+      return CLI_ERR_VISCA_ERROR;
+    }
+    *ret1 = value8;
+    return CLI_OK_ONE_RETURN;
+  }
+
+  if (strcmp(command, "twiga_set_video_format") == 0) {
+    if (arg1 == NULL) return CLI_ERR_ARG1_INVALID;
+    {
+      static const unsigned char nvram_cmd[] = {0x01, 0x06, 0x13, 0x00, 0x01};
+      int do_persist = (arg2 != NULL && intarg2 == 1) ? VISCA_PERSIST : VISCA_NO_PERSIST;
+      last_visca_error = VISCA_twiga_set_video_format(&iface, &camera, (uint8_t)intarg1, do_persist, nvram_cmd, sizeof(nvram_cmd));
+      if (last_visca_error != VISCA_SUCCESS) {
+        return CLI_ERR_VISCA_ERROR;
+      }
+    }
+    return CLI_OK_NO_RETURN;
+  }
+
+  if (strcmp(command, "save_nvram") == 0) {
+    if (arg1 == NULL) return CLI_ERR_ARG1_INVALID;
+    {
+      unsigned char nvram_bytes[30];
+      uint32_t nvram_len = 0;
+      char *args[] = {arg1, arg2, arg3, arg4, arg5};
+      int ai;
+      for (ai = 0; ai < 5 && args[ai] != NULL; ai++) {
+        nvram_bytes[nvram_len++] = (unsigned char)strtol(args[ai], NULL, 16);
+      }
+      last_visca_error = VISCA_save_to_nvram(&iface, &camera, nvram_bytes, nvram_len);
+      if (last_visca_error != VISCA_SUCCESS) {
+        return CLI_ERR_VISCA_ERROR;
+      }
+    }
+    return CLI_OK_NO_RETURN;
+  }
+
+  if (strcmp(command, "twiga_camera_reset") == 0) {
+    last_visca_error = VISCA_twiga_camera_reset(&iface, &camera);
+    if (last_visca_error != VISCA_SUCCESS) {
+      return CLI_ERR_VISCA_ERROR;
+    }
+    return CLI_OK_NO_RETURN;
+  }
+
+  if (strcmp(command, "send_raw") == 0) {
+    if (arg1 == NULL) return CLI_ERR_ARG1_INVALID;
+    {
+      unsigned char raw_bytes[30];
+      uint32_t raw_len = 0;
+      char *args[] = {arg1, arg2, arg3, arg4, arg5};
+      int ai;
+      for (ai = 0; ai < 5 && args[ai] != NULL; ai++) {
+        raw_bytes[raw_len++] = (unsigned char)strtol(args[ai], NULL, 16);
+      }
+      last_visca_error = VISCA_save_to_nvram(&iface, &camera, raw_bytes, raw_len);
+      if (last_visca_error != VISCA_SUCCESS) {
+        return CLI_ERR_VISCA_ERROR;
+      }
+    }
+    return CLI_OK_NO_RETURN;
+  }
+
   /* If we reach this point, the commandline matched 
    * none of the commands we know
    */
@@ -2503,41 +2617,45 @@ int main(int argc, char **argv) {
 
   errorcode = doCommand(commandline, &ret1, &ret2, &ret3);
   switch(errorcode) {
-    case 10:
+    case CLI_OK_NO_RETURN:
       printf("10 OK - no return value\n");
       break;
-    case 11:
+    case CLI_OK_ONE_RETURN:
       printf("11 OK - one return value\nRET1: %i\n", ret1);
       break;    
-    case 12:
+    case CLI_OK_TWO_RETURN:
       printf("12 OK - two return values\nRET1: %i\nRET2: %i\n", ret1, ret2);
       break;
-    case 13:
+    case CLI_OK_THREE_RETURN:
       printf("13 OK - three return values\nRET1: %i\nRET2: %i\nRET3: %i\n", 
              ret1, ret2, ret3);
       break;
-    case 40:
+    case CLI_ERR_CMD_UNKNOWN:
       printf("40 ERROR - command not recognized\n");
       break;
-    case 41:
+    case CLI_ERR_ARG1_INVALID:
       printf("41 ERROR - argument 1 not recognized\n");
       break;
-    case 42:
+    case CLI_ERR_ARG2_INVALID:
       printf("42 ERROR - argument 2 not recognized\n");
       break;
-    case 43:
+    case CLI_ERR_ARG3_INVALID:
       printf("43 ERROR - argument 3 not recognized\n");
       break;
-    case 44:
+    case CLI_ERR_ARG4_INVALID:
       printf("44 ERROR - argument 4 not recognized\n");
       break;
-    case 45:
+    case CLI_ERR_ARG5_INVALID:
       printf("45 ERROR - argument 5 not recognized\n");
       break;
-    case 46:
-      printf("46 ERROR - camera replied with an error\n");
+    case CLI_ERR_VISCA_ERROR:
+      if (last_visca_error != 0 && last_visca_error != VISCA_FAILURE) {
+        printf("46 ERROR - camera replied with an error (VISCA code: 0x%02X)\n", last_visca_error);
+      } else {
+        printf("46 ERROR - camera replied with an error\n");
+      }
       break;
-    case 47:
+    case CLI_ERR_UNKNOWN_REPLY:
       printf("47 ERROR - camera replied with an unknown return value\n");
       break;
     default:
