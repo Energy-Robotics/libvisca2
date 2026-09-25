@@ -3781,6 +3781,24 @@ VISCA_save_to_nvram(VISCAInterface_t *iface, VISCACamera_t *camera,
   return _VISCA_send_packet(iface, camera, &packet);
 }
 
+/* The Twiga's own NVRAM save. Not part of standard VISCA: only the leading byte
+   has its standard meaning, a command rather than an inquiry. */
+static const unsigned char _VISCA_twiga_nvram_command[] = {VISCA_COMMAND, 0x06, 0x13, 0x00, 0x01};
+
+VISCA_API uint32_t
+VISCA_twiga_save_to_nvram(VISCAInterface_t *iface, VISCACamera_t *camera)
+{
+  /* The Twiga takes the NVRAM save at its own address, not at the address the
+     camera is otherwise talked to. */
+  VISCACamera_t persist_camera;
+
+  persist_camera = *camera;
+  persist_camera.address = VISCA_TWIGA_PERSIST_ADDRESS;
+
+  return VISCA_save_to_nvram(iface, &persist_camera, _VISCA_twiga_nvram_command,
+                             sizeof(_VISCA_twiga_nvram_command));
+}
+
 static uint8_t
 _VISCA_twiga_lvds_mode_for_format(uint8_t format_value)
 {
@@ -3810,8 +3828,7 @@ VISCA_twiga_camera_reset(VISCAInterface_t *iface, VISCACamera_t *camera)
 
 VISCA_API uint32_t
 VISCA_twiga_set_video_format(VISCAInterface_t *iface, VISCACamera_t *camera,
-                       uint8_t format_value, int persist,
-                       const unsigned char *nvram_cmd, uint32_t nvram_cmd_len)
+                       uint8_t format_value, int persist)
 {
   uint32_t err;
   uint8_t lvds_mode;
@@ -3827,18 +3844,13 @@ VISCA_twiga_set_video_format(VISCAInterface_t *iface, VISCACamera_t *camera,
     return err;
 
   if (persist) {
-    VISCACamera_t persist_camera;
-    uint32_t persist_err;
+    err = VISCA_twiga_save_to_nvram(iface, camera);
+    if (err != VISCA_SUCCESS)
+      return err;
 
-    persist_camera = *camera;
-    persist_camera.address = VISCA_TWIGA_PERSIST_ADDRESS;
-    persist_err = VISCA_save_to_nvram(iface, &persist_camera, nvram_cmd, nvram_cmd_len);
-    if (persist_err != VISCA_SUCCESS)
-      return persist_err;
-
-    persist_err = VISCA_twiga_camera_reset(iface, camera);
-    if (persist_err != VISCA_SUCCESS)
-      return persist_err;
+    err = VISCA_twiga_camera_reset(iface, camera);
+    if (err != VISCA_SUCCESS)
+      return err;
   }
 
   return VISCA_SUCCESS;
