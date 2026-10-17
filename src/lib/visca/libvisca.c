@@ -67,6 +67,17 @@ _VISCA_get_reply(VISCAInterface_t *iface, VISCACamera_t *camera, int timeout_sec
         return VISCA_FAILURE;
       iface->type=iface->ibuf[1]&0xF0;
     }
+
+  // Skip short (3-byte) completion messages that carry no data payload.
+  // These are stale completions from prior motor commands (zoom, focus, etc.)
+  // that returned after ACK only.  Inquiry responses are always longer than
+  // 3 bytes because they include data, so this is safe to do unconditionally.
+  while (iface->type==VISCA_RESPONSE_COMPLETED && iface->bytes <= 3)
+    {
+      if (_VISCA_get_packet(iface)!=VISCA_SUCCESS) 
+        return VISCA_FAILURE;
+      iface->type=iface->ibuf[1]&0xF0;
+    }
  
   switch (iface->type)
     {
@@ -118,6 +129,32 @@ _VISCA_init_interface(VISCAInterface_t *iface)
   iface->broadcast = 0;
   iface->bytes = 0;
   iface->read_timeout_sec = VISCA_READ_TIMEOUT_SEC;
+}
+
+/* Send a command and return as soon as the ACK is received, without waiting
+   for the completion message.  This is intended for motor commands (zoom,
+   focus, pan/tilt) whose completion may take many seconds.  The completion
+   message will be drained by _VISCA_get_reply when the next command or
+   inquiry is issued. */
+VISCA_API uint32_t
+_VISCA_send_packet_with_ack(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPacket_t *packet)
+{
+  if (_VISCA_send_packet(iface,camera,packet)!=VISCA_SUCCESS)
+    return VISCA_FAILURE;
+
+  if (_VISCA_get_packet(iface)!=VISCA_SUCCESS)
+    return VISCA_FAILURE;
+  iface->type=iface->ibuf[1]&0xF0;
+
+  // If the first response is already a completion or error, accept it.
+  if (iface->type==VISCA_RESPONSE_COMPLETED || iface->type==VISCA_RESPONSE_ERROR)
+    return VISCA_SUCCESS;
+
+  // Otherwise we expect an ACK.
+  if (iface->type!=VISCA_RESPONSE_ACK)
+    return VISCA_FAILURE;
+
+  return VISCA_SUCCESS;
 }
 
 
@@ -466,7 +503,7 @@ VISCA_set_zoom_value(VISCAInterface_t *iface, VISCACamera_t *camera, uint32_t zo
   _VISCA_append_byte(&packet, (zoom & 0x00F0) >>  4);
   _VISCA_append_byte(&packet, (zoom & 0x000F));
 
-  return _VISCA_send_packet_with_reply(iface, camera, &packet);
+  return _VISCA_send_packet_with_ack(iface, camera, &packet);
 }
 
 
@@ -488,7 +525,7 @@ VISCA_set_zoom_and_focus_value(VISCAInterface_t *iface, VISCACamera_t *camera, u
   _VISCA_append_byte(&packet, (focus & 0x00F0) >>  4);
   _VISCA_append_byte(&packet, (focus & 0x000F));
  
-  return _VISCA_send_packet_with_reply(iface, camera, &packet);
+  return _VISCA_send_packet_with_ack(iface, camera, &packet);
 }
 
 
@@ -626,7 +663,7 @@ VISCA_set_focus_value(VISCAInterface_t *iface, VISCACamera_t *camera, uint32_t f
   _VISCA_append_byte(&packet, (focus & 0x00F0) >>  4);
   _VISCA_append_byte(&packet, (focus & 0x000F));
 
-  return _VISCA_send_packet_with_reply(iface, camera, &packet);
+  return _VISCA_send_packet_with_ack(iface, camera, &packet);
 }
 
 
@@ -1820,7 +1857,7 @@ VISCA_get_zoom_value(VISCAInterface_t *iface, VISCACamera_t *camera, uint16_t *v
   if (err!=VISCA_SUCCESS)
     return err;
   else {
-    *value=(iface->ibuf[2]<<12)+(iface->ibuf[3]<<8)+(iface->ibuf[4]<<4)+iface->ibuf[5];
+    *value=((iface->ibuf[2] & 0x0F)<<12)+((iface->ibuf[3] & 0x0F)<<8)+((iface->ibuf[4] & 0x0F)<<4)+(iface->ibuf[5] & 0x0F);
     return VISCA_SUCCESS;
   }
 
@@ -1864,7 +1901,7 @@ VISCA_get_focus_value(VISCAInterface_t *iface, VISCACamera_t *camera, uint16_t *
     return err;
   else
     {
-      *value=(iface->ibuf[2]<<12)+(iface->ibuf[3]<<8)+(iface->ibuf[4]<<4)+iface->ibuf[5];
+      *value=((iface->ibuf[2] & 0x0F)<<12)+((iface->ibuf[3] & 0x0F)<<8)+((iface->ibuf[4] & 0x0F)<<4)+(iface->ibuf[5] & 0x0F);
       return VISCA_SUCCESS;
     }
 }
